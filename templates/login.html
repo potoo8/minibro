@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Login | MiniBro{% endblock %}
+{% block content %}
+  <section class="auth-card">
+    <h1>Welcome back</h1>
+    <p>Log in to continue your paper trading session.</p>
+    <form method="post" class="stack-form">
+      <label>
+        Username
+        <input type="text" name="username" required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required>
+      </label>
+      <button type="submit">Log In</button>
+    </form>
+  </section>
+{% endblock %}

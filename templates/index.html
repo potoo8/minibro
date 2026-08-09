@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Welcome | MiniBro{% endblock %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Paper trading for beginners</p>
+      <h1>Practice stock trading without risking real money.</h1>
+      <p class="lede">
+        This beginner project uses Flask, SQLite, and market data-backed paper trading so you can
+        learn how logins, trades, portfolios, and transaction history work together.
+      </p>
+      {% if market_data_enabled %}
+        <p class="hint">Featured prices below are coming from {{ market_data_provider }}.</p>
+      {% else %}
+        <p class="hint">Set your Alpha Vantage API key to load real market data across the site.</p>
+      {% endif %}
+      <div class="hero-actions">
+        <a class="button-link" href="{{ url_for('register') }}">Create Account</a>
+        <a class="button-link secondary" href="{{ url_for('login') }}">Log In</a>
+      </div>
+    </div>
+
+    <div class="market-panel">
+      <h2>Featured Market Prices</h2>
+      {% if featured_quotes %}
+        <div class="quote-grid">
+          {% for quote in featured_quotes %}
+            <article class="quote-card">
+              <div class="quote-top">
+                <strong>{{ quote.symbol }}</strong>
+                <span>{{ quote.name }}</span>
+              </div>
+              <div class="quote-price">{{ quote.price | currency }}</div>
+              <div class="{% if quote.daily_change >= 0 %}gain{% else %}loss{% endif %}">
+                {{ "%+.2f"|format(quote.daily_change) }} ({{ "%+.2f"|format(quote.daily_change_pct) }}%)
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-state">Market data is unavailable right now. Add your Alpha Vantage API key and restart the server.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="info-grid">
+    <article class="info-card">
+      <h3>What you can do</h3>
+      <p>Register, log in, search symbols, buy with fake cash, sell shares, and review your trade history.</p>
+    </article>
+    <article class="info-card">
+      <h3>Starter cash</h3>
+      <p>Every new account starts with <strong>$10,000</strong> so you can explore portfolio management safely.</p>
+    </article>
+    <article class="info-card">
+      <h3>Beginner-friendly setup</h3>
+      <p>The app uses Alpha Vantage market data for prices and charts, and paper trades execute against those fetched prices.</p>
+    </article>
+  </section>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Quotes | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Market data</p>
+      <h1>Search a stock</h1>
+      {% if market_data_enabled %}
+        <p class="hint">Quotes use {{ market_data_provider }} by default for supported symbols.</p>
+      {% else %}
+        <p class="hint">Set your Alpha Vantage API key to look up live or end-of-day quotes.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="content-grid single">
+    <article class="panel">
+      <form method="post" class="inline-form">
+        <label class="grow">
+          Symbol or company name
+          <input type="text" name="query" placeholder="AAPL, Apple, Meta..." value="{{ search_query }}" required>
+        </label>
+        <button type="submit">Search</button>
+      </form>
+      <p class="hint">Search by ticker or company name, then open a quote, stock page, or trade ticket from the results.</p>
+    </article>
+
+    {% if quote_data %}
+      <article class="panel quote-preview">
+        <div class="panel-heading">
+          <h2>{{ quote_data.name }} ({{ quote_data.symbol }})</h2>
+          <div class="action-row">
+            <a class="button-link secondary" href="{{ url_for('stock_detail', symbol=quote_data.symbol) }}">View Stock Page</a>
+            <a class="button-link" href="{{ url_for('trade', symbol=quote_data.symbol) }}">Open Trade Ticket</a>
+          </div>
+        </div>
+        <div class="quote-price large">{{ quote_data.price | currency }}</div>
+        <p class="{% if quote_data.daily_change >= 0 %}gain{% else %}loss{% endif %}">
+          {{ "%+.2f"|format(quote_data.daily_change) }} today ({{ "%+.2f"|format(quote_data.daily_change_pct) }}%)
+        </p>
+        <p class="hint">Source: {{ quote_data.source }}{% if quote_data.as_of %} | As of: {{ quote_data.as_of }}{% endif %}</p>
+        <form method="post" action="{% if quote_data.symbol in watchlist_symbols %}{{ url_for('remove_from_watchlist', symbol=quote_data.symbol) }}{% else %}{{ url_for('add_to_watchlist', symbol=quote_data.symbol) }}{% endif %}">
+          <input type="hidden" name="next" value="{{ url_for('quote', symbol=quote_data.symbol) }}">
+          <button class="secondary-button" type="submit">
+            {% if quote_data.symbol in watchlist_symbols %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
+          </button>
+        </form>
+      </article>
+    {% endif %}
+
+    {% if search_results %}
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Search Results</h2>
+          <span class="hint">{{ search_results|length }} matches</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Region</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in search_results %}
+                <tr>
+                  <td><strong>{{ item.symbol }}</strong></td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.type }}</td>
+                  <td>{{ item.region }}{% if item.currency %} ({{ item.currency }}){% endif %}</td>
+                  <td>
+                    <div class="action-row">
+                      <a class="button-link secondary" href="{{ url_for('quote', symbol=item.symbol) }}">Quote</a>
+                      <a class="button-link secondary" href="{{ url_for('stock_detail', symbol=item.symbol) }}">Chart</a>
+                      <a class="button-link" href="{{ url_for('trade', symbol=item.symbol) }}">Trade</a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    {% endif %}
+  </section>
+{% endblock %}
