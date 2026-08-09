@@ -1,6 +1,6 @@
 # MiniBro
 
-Beginner-friendly paper trading website built with Flask and SQLite.
+Beginner-friendly paper trading website, a.k.a a mini broker, built with Flask and SQLite.
 
 ## Features
 
