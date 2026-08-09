@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ quote.symbol }} | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Stock detail</p>
+      <h1>{{ quote.name }} ({{ quote.symbol }})</h1>
+      <p class="lede">{{ quote.price | currency }}</p>
+      <p class="{% if quote.daily_change >= 0 %}gain{% else %}loss{% endif %}">
+        {{ "%+.2f"|format(quote.daily_change) }} today ({{ "%+.2f"|format(quote.daily_change_pct) }}%)
+      </p>
+    </div>
+    <div class="action-row">
+      <a class="button-link" href="{{ url_for('trade', symbol=quote.symbol) }}">Trade This Stock</a>
+      <form method="post" action="{% if on_watchlist %}{{ url_for('remove_from_watchlist', symbol=quote.symbol) }}{% else %}{{ url_for('add_to_watchlist', symbol=quote.symbol) }}{% endif %}">
+        <input type="hidden" name="next" value="{{ url_for('stock_detail', symbol=quote.symbol) }}">
+        <button class="secondary-button" type="submit">
+          {% if on_watchlist %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section class="range-tabs">
+    {% for item in timeframe_links %}
+      <a class="range-tab {% if item.active %}active{% endif %}" href="{{ url_for('stock_detail', symbol=quote.symbol, range=item.key) }}">{{ item.label }}</a>
+    {% endfor %}
+  </section>
+
+  {% if chart %}
+    <section class="content-grid single">
+      <article class="panel">
+        <div class="chart-meta">
+          <div>
+            <span>Latest</span>
+            <strong>{{ chart.latest_price | currency }}</strong>
+          </div>
+          <div>
+            <span>{{ chart.timeframe_label }} range</span>
+            <strong>{{ chart.min_price | currency }} - {{ chart.max_price | currency }}</strong>
+          </div>
+          <div>
+            <span>Change</span>
+            <strong class="{% if chart.change >= 0 %}gain{% else %}loss{% endif %}">
+              {{ "%+.2f"|format(chart.change) }} ({{ "%+.2f"|format(chart.change_pct) }}%)
+            </strong>
+          </div>
+        </div>
+
+        <svg viewBox="0 0 860 260" class="portfolio-chart" role="img" aria-label="{{ quote.symbol }} price chart">
+          <line x1="20" y1="220" x2="840" y2="220" class="chart-axis"></line>
+          <line x1="20" y1="36" x2="840" y2="36" class="chart-gridline"></line>
+          <g transform="scale(2.0476 1.1818)">
+            {{ chart.candles_svg | safe }}
+          </g>
+        </svg>
+
+        <div class="chart-footer">
+          <span>{{ chart.start_label }}</span>
+          <span>{{ chart.end_label }}</span>
+        </div>
+        <p class="hint">Source: {{ chart.source }} | {{ chart.as_of }}</p>
+      </article>
+    </section>
+  {% endif %}
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span>Held Shares</span>
+      <strong>{% if holding %}{{ holding.shares }}{% else %}0{% endif %}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Average Cost</span>
+      <strong>{% if holding %}{{ holding.avg_cost | currency }}{% else %}-{% endif %}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Source</span>
+      <strong>{{ quote.source.title() }}</strong>
+    </article>
+  </section>
+{% endblock %}

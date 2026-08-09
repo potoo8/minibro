@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Portfolio overview</p>
+      <h1>{{ g.user.username }}'s dashboard</h1>
+      {% if market_data_enabled %}
+        <p class="hint">Portfolio values are using {{ market_data_provider }} quotes when available.</p>
+      {% else %}
+        <p class="hint">Set your Alpha Vantage API key to load real portfolio values.</p>
+      {% endif %}
+    </div>
+    <div class="action-row">
+      <a class="button-link secondary" href="{{ url_for('charts') }}">View Charts</a>
+      <a class="button-link" href="{{ url_for('quote') }}">Trade Stocks</a>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span>Cash Balance</span>
+      <strong>{{ g.user.cash_balance | currency }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Holdings Value</span>
+      <strong>{{ holdings_value | currency }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Total Portfolio</span>
+      <strong>{{ total_value | currency }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Unrealized P&amp;L</span>
+      <strong class="{% if unrealized_pl >= 0 %}gain{% else %}loss{% endif %}">
+        {{ unrealized_pl | currency }}
+      </strong>
+    </article>
+    <article class="summary-card">
+      <span>Realized P&amp;L</span>
+      <strong class="{% if realized_pl >= 0 %}gain{% else %}loss{% endif %}">
+        {{ realized_pl | currency }}
+      </strong>
+    </article>
+  </section>
+
+  {% if performance_chart %}
+    <section class="panel portfolio-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Account performance</h2>
+          <p class="hint">A one-month view of your account value based on your current holdings and cash balance.</p>
+        </div>
+        <div class="portfolio-badge {% if performance_chart.change >= 0 %}positive{% else %}negative{% endif %}">
+          {{ "%+.2f"|format(performance_chart.change) }} ({{ "%+.2f"|format(performance_chart.change_pct) }}%)
+        </div>
+      </div>
+      <svg viewBox="0 0 860 220" class="portfolio-chart" role="img" aria-label="Account performance chart">
+        <line x1="20" y1="190" x2="840" y2="190" class="chart-axis"></line>
+        <line x1="20" y1="30" x2="840" y2="30" class="chart-gridline"></line>
+        <polyline points="{{ performance_chart.line_points }}" class="portfolio-line"></polyline>
+      </svg>
+      <div class="chart-footer">
+        <span>{{ performance_chart.labels[0] }}</span>
+        <span>{{ performance_chart.labels[-1] }}</span>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="content-grid">
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Manage cash</h2>
+      </div>
+      <p class="hint">Add or remove paper cash from your account balance.</p>
+      <form method="post" action="{{ url_for('update_balance') }}" class="stack-form compact-form">
+        <label>
+          Amount
+          <input type="number" name="amount" min="0.01" step="0.01" placeholder="500.00" required>
+        </label>
+        <div class="action-row">
+          <button type="submit" name="action" value="deposit">Add Money</button>
+          <button class="secondary-button" type="submit" name="action" value="withdraw">Take Out Money</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Your holdings</h2>
+      </div>
+      {% if holdings %}
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Company</th>
+              <th>Shares</th>
+              <th>Price</th>
+              <th>Avg Cost</th>
+              <th>Unrealized P&amp;L</th>
+              <th>Market Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for holding in holdings %}
+              <tr>
+                <td><a href="{{ url_for('stock_detail', symbol=holding.symbol) }}">{{ holding.symbol }}</a></td>
+                <td>{{ holding.name }}</td>
+                <td>{{ holding.shares }}</td>
+                <td>
+                  {% if holding.market_data_available %}
+                    {{ holding.price | currency }}
+                  {% else %}
+                    <span class="data-unavailable">Unavailable</span>
+                  {% endif %}
+                </td>
+                <td>{{ holding.avg_cost | currency }}</td>
+                <td class="{% if holding.unrealized_pl is not none and holding.unrealized_pl >= 0 %}gain{% elif holding.unrealized_pl is not none %}loss{% endif %}">
+                  {% if holding.market_data_available %}
+                    {{ holding.unrealized_pl | currency }}
+                  {% else %}
+                    <span class="data-unavailable">Unavailable</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if holding.market_data_available %}
+                    {{ holding.market_value | currency }}
+                  {% else %}
+                    <span class="data-unavailable">Unavailable</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">You do not own any shares yet. Try your first buy order.</p>
+      {% endif %}
+      <p class="hint">Prices are loaded from {{ market_data_provider }} where available. Unrealized P&amp;L is based on your average cost.</p>
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Watchlist</h2>
+        <a href="{{ url_for('quote') }}">Add symbols</a>
+      </div>
+      {% if watchlist %}
+        <div class="watchlist-list">
+          {% for item in watchlist %}
+            <div class="watchlist-item">
+              <div>
+                <strong><a href="{{ url_for('stock_detail', symbol=item.symbol) }}">{{ item.symbol }}</a></strong>
+                <p>{{ item.name }}</p>
+              </div>
+              <div class="watchlist-price">
+                <strong>{{ item.price | currency }}</strong>
+                <span class="{% if item.daily_change >= 0 %}gain{% else %}loss{% endif %}">
+                  {{ "%+.2f"|format(item.daily_change_pct) }}%
+                </span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-state">Your watchlist is empty. Add symbols from the quote page or a stock page.</p>
+      {% endif %}
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Open orders</h2>
+        <a href="{{ url_for('orders') }}">View all</a>
+      </div>
+      {% if open_orders %}
+        <div class="activity-list">
+          {% for order in open_orders[:5] %}
+            <div class="activity-item">
+              <div>
+                <strong>{{ order.order_type.title() }} {{ order.side.title() }} {{ order.symbol }}</strong>
+                <p>{{ order.shares }} shares{% if order.limit_price %} at {{ order.limit_price | currency }}{% elif order.stop_price %} at {{ order.stop_price | currency }}{% endif %}</p>
+              </div>
+              <span>{{ order.created_at[:10] }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-state">You do not have any open orders right now.</p>
+      {% endif %}
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Recent trades</h2>
+        <a href="{{ url_for('history') }}">View all</a>
+      </div>
+      {% if transactions %}
+        <div class="activity-list">
+          {% for trade in transactions %}
+            <div class="activity-item">
+              <div>
+                {% if trade.symbol == "CASH" %}
+                  <strong>{{ trade.trade_type.title() }} funds</strong>
+                  <p>{{ trade.total | currency }} cash movement</p>
+                {% else %}
+                  <strong>{{ trade.order_kind.title() }} {{ trade.trade_type.title() }} {{ trade.symbol }}</strong>
+                  <p>{{ trade.shares }} shares at {{ trade.price | currency }}</p>
+                {% endif %}
+              </div>
+              <span>{{ trade.created_at[:10] }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-state">Your trade history will appear here.</p>
+      {% endif %}
+    </article>
+  </section>
+{% endblock %}

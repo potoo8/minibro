@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Trade {{ quote.symbol }} | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Trade ticket</p>
+      <h1>{{ quote.name }} ({{ quote.symbol }})</h1>
+      <p class="lede">Current price: <strong>{{ quote.price | currency }}</strong></p>
+      {% if market_data_enabled %}
+        <p class="hint">This trade ticket is priced using {{ market_data_provider }} market data.</p>
+      {% else %}
+        <p class="hint">Set your Alpha Vantage API key so paper trades price against real market data.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="content-grid single">
+    <article class="panel">
+      <p>You currently own <strong>{{ owned_shares }}</strong> shares.</p>
+      <p class="hint">Source: {{ quote.source }}{% if quote.as_of %} | As of: {{ quote.as_of }}{% endif %}</p>
+      <form method="post" class="stack-form">
+        <label>
+          Order type
+          <select name="order_kind">
+            <option value="market">Market</option>
+            <option value="limit">Limit</option>
+            <option value="stop">Stop</option>
+          </select>
+        </label>
+        <label>
+          Side
+          <select name="trade_type">
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+          </select>
+        </label>
+        <label>
+          Shares
+          <input type="number" name="shares" min="1" step="1" required>
+        </label>
+        <label>
+          Trigger price
+          <input type="number" name="trigger_price" min="0.01" step="0.01" placeholder="Only used for limit and stop orders">
+        </label>
+        <p class="hint">Market orders execute immediately. Limit and stop orders stay open until the current price crosses your trigger.</p>
+        <button type="submit">Submit Order</button>
+      </form>
+      <div class="action-row">
+        <a class="button-link secondary" href="{{ url_for('stock_detail', symbol=quote.symbol) }}">View Stock Page</a>
+        <form method="post" action="{% if quote.symbol in watchlist_symbols %}{{ url_for('remove_from_watchlist', symbol=quote.symbol) }}{% else %}{{ url_for('add_to_watchlist', symbol=quote.symbol) }}{% endif %}">
+          <input type="hidden" name="next" value="{{ url_for('trade', symbol=quote.symbol) }}">
+          <button class="secondary-button" type="submit">
+            {% if quote.symbol in watchlist_symbols %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
+          </button>
+        </form>
+      </div>
+    </article>
+  </section>
+{% endblock %}

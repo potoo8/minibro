@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Orders | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Order management</p>
+      <h1>Open and past orders</h1>
+      <p class="hint">Limit and stop orders stay open until MiniBro detects a trigger from the latest market quote.</p>
+    </div>
+  </section>
+
+  <section class="content-grid single">
+    <article class="panel">
+      {% if orders %}
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Side</th>
+              <th>Type</th>
+              <th>Symbol</th>
+              <th>Shares</th>
+              <th>Trigger</th>
+              <th>Executed</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+              <tr>
+                <td>{{ order.created_at[:19].replace("T", " ") }}</td>
+                <td>{{ order.status.title() }}</td>
+                <td>{{ order.side.title() }}</td>
+                <td>{{ order.order_type.title() }}</td>
+                <td><a href="{{ url_for('stock_detail', symbol=order.symbol) }}">{{ order.symbol }}</a></td>
+                <td>{{ order.shares }}</td>
+                <td>
+                  {% if order.limit_price %}
+                    {{ order.limit_price | currency }}
+                  {% elif order.stop_price %}
+                    {{ order.stop_price | currency }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{% if order.executed_price %}{{ order.executed_price | currency }}{% else %}-{% endif %}</td>
+                <td>
+                  {% if order.status == "open" %}
+                    <form method="post" action="{{ url_for('cancel_order', order_id=order.id) }}">
+                      <button class="secondary-button" type="submit">Cancel</button>
+                    </form>
+                  {% else %}
+                    <span class="hint">{{ order.status_reason }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">You have not placed any orders yet.</p>
+      {% endif %}
+    </article>
+  </section>
+{% endblock %}

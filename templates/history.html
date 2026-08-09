@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}History | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Trading activity</p>
+      <h1>Transaction history</h1>
+    </div>
+  </section>
+
+  <section class="content-grid single">
+    <article class="panel">
+      {% if transactions %}
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Order</th>
+              <th>Symbol</th>
+              <th>Company</th>
+              <th>Shares</th>
+              <th>Price</th>
+              <th>Total</th>
+              <th>Realized P&amp;L</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for trade in transactions %}
+              <tr>
+                <td>{{ trade.created_at[:19].replace("T", " ") }}</td>
+                <td>{{ trade.trade_type.title() }}</td>
+                <td>{{ trade.order_kind.title() }}</td>
+                <td>{{ trade.symbol }}</td>
+                <td>{{ trade.company_name }}</td>
+                <td>{% if trade.symbol == "CASH" %}-{% else %}{{ trade.shares }}{% endif %}</td>
+                <td>{{ trade.price | currency }}</td>
+                <td>{{ trade.total | currency }}</td>
+                <td class="{% if trade.realized_pl >= 0 %}gain{% else %}loss{% endif %}">{{ trade.realized_pl | currency }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">No trades yet. Once you place an order, it will show up here.</p>
+      {% endif %}
+    </article>
+  </section>
+{% endblock %}

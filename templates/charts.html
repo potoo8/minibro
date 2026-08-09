@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Charts | MiniBro{% endblock %}
+{% block content %}
+  <section class="section-header">
+    <div>
+      <p class="eyebrow">Portfolio visuals</p>
+      <h1>Your stock charts</h1>
+      <p class="lede">Review your positions with intraday and historical chart controls, candlesticks, and a portfolio value trend.</p>
+      {% if market_data_enabled %}
+        <p class="hint">Charts use {{ market_data_provider }} daily market history when available.</p>
+      {% else %}
+        <p class="hint">Set your Alpha Vantage API key to load real chart history.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="range-tabs">
+    {% for item in timeframe_links %}
+      <a
+        class="range-tab {% if item.active %}active{% endif %}"
+        href="{{ url_for('charts', range=item.key) }}"
+      >
+        {{ item.label }}
+      </a>
+    {% endfor %}
+  </section>
+
+  {% if portfolio_chart %}
+    <section class="panel portfolio-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Portfolio value</h2>
+          <p class="hint">Cash plus the market value of your current holdings over the selected window.</p>
+        </div>
+        <div class="portfolio-badge {% if portfolio_chart.change >= 0 %}positive{% else %}negative{% endif %}">
+          {{ "%+.2f"|format(portfolio_chart.change) }} ({{ "%+.2f"|format(portfolio_chart.change_pct) }}%)
+        </div>
+      </div>
+
+      <div class="chart-meta portfolio-meta">
+        <div>
+          <span>Start value</span>
+          <strong>{{ portfolio_chart.start_value | currency }}</strong>
+        </div>
+        <div>
+          <span>Current value</span>
+          <strong>{{ portfolio_chart.end_value | currency }}</strong>
+        </div>
+        <div>
+          <span>Range</span>
+          <strong>{{ portfolio_chart.min_value | currency }} - {{ portfolio_chart.max_value | currency }}</strong>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 860 220" class="portfolio-chart" role="img" aria-label="Portfolio value chart">
+        <line x1="20" y1="190" x2="840" y2="190" class="chart-axis"></line>
+        <line x1="20" y1="30" x2="840" y2="30" class="chart-gridline"></line>
+        <polyline points="{{ portfolio_chart.line_points }}" class="portfolio-line"></polyline>
+      </svg>
+
+      <div class="chart-footer">
+        <span>{{ portfolio_chart.labels[0] }}</span>
+        <span>{{ portfolio_chart.labels[-1] }}</span>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if chart_cards %}
+    <section class="chart-grid">
+      {% for chart in chart_cards %}
+        <article class="panel chart-card">
+          <div class="panel-heading">
+            <div>
+              <h2>{{ chart.name }} ({{ chart.symbol }})</h2>
+              <p class="hint">{{ chart.shares }} shares | Source: {{ chart.source }} | {{ chart.as_of }}</p>
+            </div>
+            <a href="{{ url_for('trade', symbol=chart.symbol) }}">Trade</a>
+          </div>
+          {% if chart.chart_available %}
+            <div class="chart-meta">
+              <div>
+                <span>Open</span>
+                <strong>{{ chart.open_price | currency }}</strong>
+              </div>
+              <div>
+                <span>Latest</span>
+                <strong>{{ chart.latest_price | currency }}</strong>
+              </div>
+              <div>
+                <span>{{ chart.timeframe_label }} range</span>
+                <strong>{{ chart.min_price | currency }} - {{ chart.max_price | currency }}</strong>
+              </div>
+            </div>
+
+            <div class="position-change">
+              <span>Window change</span>
+              <strong class="{% if chart.change >= 0 %}gain{% else %}loss{% endif %}">
+                {{ "%+.2f"|format(chart.change) }} ({{ "%+.2f"|format(chart.change_pct) }}%)
+              </strong>
+            </div>
+
+            <svg viewBox="0 0 420 220" class="price-chart candle-chart" role="img" aria-label="{{ chart.symbol }} candlestick chart">
+              <line x1="18" y1="188" x2="402" y2="188" class="chart-axis"></line>
+              <line x1="18" y1="32" x2="402" y2="32" class="chart-gridline"></line>
+              {{ chart.candles_svg | safe }}
+            </svg>
+
+            <div class="mini-trend">
+              <span>Closing trend</span>
+              <svg viewBox="0 0 420 88" class="mini-line-chart" role="img" aria-label="{{ chart.symbol }} closing trend">
+                <polyline points="{{ chart.mini_line_points }}" class="chart-line"></polyline>
+              </svg>
+            </div>
+
+            <div class="chart-footer">
+              <span>{{ chart.start_label }}</span>
+              <span>{{ chart.end_label }}</span>
+            </div>
+          {% else %}
+            <div class="chart-unavailable">
+              <p class="empty-state">This holding is still in your portfolio, but MiniBro could not load {{ chart.timeframe_label }} chart data for it right now.</p>
+              <p class="hint">Try again later, switch ranges, or check that your Alpha Vantage API key is set on the server.</p>
+              <a class="button-link secondary" href="{{ url_for('stock_detail', symbol=chart.symbol) }}">Open Stock Page</a>
+            </div>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="content-grid single">
+      <article class="panel">
+        <p class="empty-state">You do not have any holdings yet, so there are no charts to show. Buy a stock first, then come back here.</p>
+      </article>
+    </section>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Register | MiniBro{% endblock %}
+{% block content %}
+  <section class="auth-card">
+    <h1>Create your account</h1>
+    <p>Every account starts with $10,000 in paper cash.</p>
+    <form method="post" class="stack-form">
+      <label>
+        Username
+        <input type="text" name="username" minlength="3" required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" minlength="6" required>
+      </label>
+      <label>
+        Confirm password
+        <input type="password" name="confirm_password" minlength="6" required>
+      </label>
+      <button type="submit">Register</button>
+    </form>
+  </section>
+{% endblock %}
